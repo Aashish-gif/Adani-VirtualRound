@@ -14,7 +14,7 @@ import {
 } from '@/types';
 
 // API Base URL - Change this to your backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -56,17 +56,16 @@ api.interceptors.response.use(
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<{ user: User; token: string }> => {
     const response = await api.post('/auth/login', credentials);
-    // Backend returns { success, user, token }, extract user and token
+    const { data, token } = response.data;
     return {
-      user: response.data.user,
-      token: response.data.token,
+      user: data,
+      token,
     };
   },
 
   getMe: async (): Promise<User> => {
     const response = await api.get('/auth/me');
-    // Backend returns { success, user }, extract user
-    return response.data.user;
+    return response.data.data;
   },
 
   logout: () => {
@@ -79,22 +78,22 @@ export const authApi = {
 export const equipmentApi = {
   getAll: async (filters?: EquipmentFilters): Promise<Equipment[]> => {
     const response = await api.get('/equipment', { params: filters });
-    return response.data;
+    return response.data.data;
   },
 
   getById: async (id: string): Promise<Equipment> => {
     const response = await api.get(`/equipment/${id}`);
-    return response.data;
+    return response.data.data;
   },
 
   create: async (data: CreateEquipmentForm): Promise<Equipment> => {
     const response = await api.post('/equipment', data);
-    return response.data;
+    return response.data.data;
   },
 
   update: async (id: string, data: Partial<Equipment>): Promise<Equipment> => {
     const response = await api.patch(`/equipment/${id}`, data);
-    return response.data;
+    return response.data.data;
   },
 };
 
@@ -102,12 +101,12 @@ export const equipmentApi = {
 export const teamsApi = {
   getAll: async (): Promise<Team[]> => {
     const response = await api.get('/teams');
-    return response.data;
+    return response.data.data;
   },
 
   getById: async (id: string): Promise<Team> => {
     const response = await api.get(`/teams/${id}`);
-    return response.data;
+    return response.data.data;
   },
 };
 
@@ -115,37 +114,37 @@ export const teamsApi = {
 export const requestsApi = {
   getAll: async (filters?: RequestFilters): Promise<MaintenanceRequest[]> => {
     const response = await api.get('/requests', { params: filters });
-    return response.data;
+    return response.data.data;
   },
 
   getById: async (id: string): Promise<MaintenanceRequest> => {
     const response = await api.get(`/requests/${id}`);
-    return response.data;
+    return response.data.data;
   },
 
   create: async (data: CreateRequestForm): Promise<MaintenanceRequest> => {
     const response = await api.post('/requests', data);
-    return response.data;
+    return response.data.data;
   },
 
   update: async (id: string, data: Partial<MaintenanceRequest>): Promise<MaintenanceRequest> => {
     const response = await api.patch(`/requests/${id}`, data);
-    return response.data;
+    return response.data.data;
   },
 
   updateStatus: async (id: string, status: RequestStatus): Promise<MaintenanceRequest> => {
     const response = await api.patch(`/requests/${id}`, { status });
-    return response.data;
+    return response.data.data;
   },
 
   getCalendarEvents: async (): Promise<CalendarEvent[]> => {
     const response = await api.get('/requests/calendar');
-    return response.data;
+    return response.data.data;
   },
 
   getByEquipment: async (equipmentId: string): Promise<MaintenanceRequest[]> => {
     const response = await api.get(`/requests/by-equipment/${equipmentId}`);
-    return response.data;
+    return response.data.data;
   },
 };
 
