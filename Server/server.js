@@ -13,6 +13,7 @@ import userRoutes from './routes/user.routes.js';
 import teamRoutes from './routes/team.routes.js';
 import equipmentRoutes from './routes/equipment.routes.js';
 import requestRoutes from './routes/request.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Error handling
 app.use(errorMiddleware);

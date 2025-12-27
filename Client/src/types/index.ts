@@ -181,7 +181,7 @@ export interface DashboardStats {
   overdueRequests: number;
   requestsByStatus: {
     new: number;
-    in_progress: number;
+    'in-progress': number;
     repaired: number;
     scrap: number;
   };

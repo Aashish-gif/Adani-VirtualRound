@@ -3,12 +3,20 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import MaintenanceRequest from '../models/MaintenanceRequest.js';
 import Equipment from '../models/Equipment.js';
 
-const validTransition = (from, to) => {
+const validTransition = (from, to, userRole) => {
   if (to === 'scrap') return true; // any -> scrap
+  if (from === to) return false; // no change
+  
+  // Admins and managers can set any status
+  if (userRole === 'admin' || userRole === 'manager') return true;
+  
+  // Technicians can move forward in the workflow
   const order = ['new', 'in-progress', 'repaired'];
   const iFrom = order.indexOf(from);
   const iTo = order.indexOf(to);
-  return iFrom !== -1 && iTo !== -1 && iTo - iFrom === 1;
+  
+  // Allow forward movement (can skip steps too)
+  return iFrom !== -1 && iTo !== -1 && iTo > iFrom;
 };
 
 const computeOverdue = (scheduledDate, status) => {
@@ -57,11 +65,25 @@ export const createRequest = asyncHandler(async (req, res, next) => {
 });
 
 export const getRequests = asyncHandler(async (req, res, next) => {
-  const requests = await MaintenanceRequest.find()
+  // Build filter from query parameters
+  const filter = {};
+  
+  if (req.query.status) filter.status = req.query.status;
+  if (req.query.type) filter.type = req.query.type;
+  if (req.query.equipmentId) filter.equipmentId = req.query.equipmentId;
+  if (req.query.maintenanceTeamId) filter.maintenanceTeamId = req.query.maintenanceTeamId;
+  if (req.query.teamId) filter.maintenanceTeamId = req.query.teamId;
+  if (req.query.technicianId) filter.technicianId = req.query.technicianId;
+  if (req.query.assignedToId) filter.technicianId = req.query.assignedToId;
+  if (req.query.createdBy) filter.createdBy = req.query.createdBy;
+  if (req.query.requestedById) filter.createdBy = req.query.requestedById;
+  
+  const requests = await MaintenanceRequest.find(filter)
     .populate('equipmentId')
     .populate('maintenanceTeamId')
     .populate('technicianId')
-    .populate('createdBy');
+    .populate('createdBy')
+    .sort({ createdAt: -1 });
 
   // Update overdue flags on the fly (non-destructive)
   const updates = [];
@@ -108,6 +130,11 @@ export const updateRequest = asyncHandler(async (req, res, next) => {
   const payload = {};
   for (const key of allowed) if (key in req.body) payload[key] = req.body[key];
 
+  // Normalize status: accept both 'in_progress' (frontend) and 'in-progress' (backend)
+  if (payload.status === 'in_progress') {
+    payload.status = 'in-progress';
+  }
+
   const request = await MaintenanceRequest.findById(id);
   if (!request) return next(new ApiError(404, 'Request not found'));
 
@@ -116,7 +143,9 @@ export const updateRequest = asyncHandler(async (req, res, next) => {
   }
 
   if (payload.status && payload.status !== request.status) {
-    if (!validTransition(request.status, payload.status)) return next(new ApiError(400, 'Invalid status transition'));
+    if (!validTransition(request.status, payload.status, req.user.role)) {
+      return next(new ApiError(400, `Cannot change status from '${request.status}' to '${payload.status}'`));
+    }
   }
 
   // Apply updates

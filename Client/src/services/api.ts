@@ -297,12 +297,95 @@ export const teamsApi = {
 export const requestsApi = {
   getAll: async (filters?: RequestFilters): Promise<MaintenanceRequest[]> => {
     const response = await api.get('/requests', { params: filters });
-    return response.data.data;
+    const items = response.data.data || [];
+    return items.map((r: any) => ({
+      id: r._id || r.id,
+      subject: r.subject,
+      description: r.description,
+      type: r.type,
+      status: r.status === 'in-progress' ? 'in_progress' : r.status,
+      priority: r.priority || 'medium',
+      equipmentId: r.equipmentId?._id || r.equipmentId,
+      equipment: r.equipmentId && typeof r.equipmentId === 'object' ? {
+        id: r.equipmentId._id || r.equipmentId.id,
+        name: r.equipmentId.name,
+        location: r.equipmentId.location,
+        status: r.equipmentId.isScrapped ? 'scrapped' : 'operational',
+        teamId: r.equipmentId.maintenanceTeamId?._id || r.equipmentId.maintenanceTeamId,
+        createdAt: r.equipmentId.createdAt,
+        updatedAt: r.equipmentId.updatedAt,
+      } : undefined,
+      teamId: r.maintenanceTeamId?._id || r.maintenanceTeamId,
+      team: r.maintenanceTeamId && typeof r.maintenanceTeamId === 'object' ? {
+        id: r.maintenanceTeamId._id || r.maintenanceTeamId.id,
+        name: r.maintenanceTeamId.name,
+      } : undefined,
+      assignedToId: r.technicianId?._id || r.technicianId,
+      assignedTo: r.technicianId && typeof r.technicianId === 'object' ? {
+        id: r.technicianId._id || r.technicianId.id,
+        name: r.technicianId.name,
+        email: r.technicianId.email,
+        role: r.technicianId.role,
+        createdAt: r.technicianId.createdAt,
+      } : undefined,
+      requestedById: r.createdBy?._id || r.createdBy,
+      requestedBy: r.createdBy && typeof r.createdBy === 'object' ? {
+        id: r.createdBy._id || r.createdBy.id,
+        name: r.createdBy.name,
+        email: r.createdBy.email,
+        role: r.createdBy.role,
+        createdAt: r.createdBy.createdAt,
+      } : undefined,
+      scheduledDate: r.scheduledDate,
+      completedDate: r.completedDate,
+      duration: r.durationHours ? r.durationHours * 60 : undefined,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
   },
 
   getById: async (id: string): Promise<MaintenanceRequest> => {
     const response = await api.get(`/requests/${id}`);
-    return response.data.data;
+    const r = response.data.data;
+    return {
+      id: r._id || r.id,
+      subject: r.subject,
+      description: r.description,
+      type: r.type,
+      status: r.status === 'in-progress' ? 'in_progress' : r.status,
+      priority: r.priority || 'medium',
+      equipmentId: r.equipmentId?._id || r.equipmentId,
+      equipment: r.equipmentId && typeof r.equipmentId === 'object' ? {
+        id: r.equipmentId._id || r.equipmentId.id,
+        name: r.equipmentId.name,
+        location: r.equipmentId.location,
+        status: r.equipmentId.isScrapped ? 'scrapped' : 'operational',
+      } : undefined,
+      teamId: r.maintenanceTeamId?._id || r.maintenanceTeamId,
+      team: r.maintenanceTeamId && typeof r.maintenanceTeamId === 'object' ? {
+        id: r.maintenanceTeamId._id || r.maintenanceTeamId.id,
+        name: r.maintenanceTeamId.name,
+      } : undefined,
+      assignedToId: r.technicianId?._id || r.technicianId,
+      assignedTo: r.technicianId && typeof r.technicianId === 'object' ? {
+        id: r.technicianId._id || r.technicianId.id,
+        name: r.technicianId.name,
+        email: r.technicianId.email,
+        role: r.technicianId.role,
+      } : undefined,
+      requestedById: r.createdBy?._id || r.createdBy,
+      requestedBy: r.createdBy && typeof r.createdBy === 'object' ? {
+        id: r.createdBy._id || r.createdBy.id,
+        name: r.createdBy.name,
+        email: r.createdBy.email,
+        role: r.createdBy.role,
+      } : undefined,
+      scheduledDate: r.scheduledDate,
+      completedDate: r.completedDate,
+      duration: r.durationHours ? r.durationHours * 60 : undefined,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    };
   },
 
   create: async (data: CreateRequestForm): Promise<MaintenanceRequest> => {
@@ -316,8 +399,40 @@ export const requestsApi = {
   },
 
   updateStatus: async (id: string, status: RequestStatus): Promise<MaintenanceRequest> => {
-    const response = await api.patch(`/requests/${id}`, { status });
-    return response.data.data;
+    // Convert frontend underscore to backend hyphen
+    const backendStatus = status === 'in_progress' ? 'in-progress' : status;
+    const response = await api.patch(`/requests/${id}`, { status: backendStatus });
+    const r = response.data.data;
+    return {
+      id: r._id || r.id,
+      subject: r.subject,
+      description: r.description,
+      type: r.type,
+      status: r.status === 'in-progress' ? 'in_progress' : r.status,
+      priority: r.priority || 'medium',
+      equipmentId: r.equipmentId?._id || r.equipmentId,
+      equipment: r.equipmentId && typeof r.equipmentId === 'object' ? {
+        id: r.equipmentId._id || r.equipmentId.id,
+        name: r.equipmentId.name,
+        location: r.equipmentId.location,
+        status: r.equipmentId.isScrapped ? 'scrapped' : 'operational',
+      } : undefined,
+      teamId: r.maintenanceTeamId?._id || r.maintenanceTeamId,
+      assignedToId: r.technicianId?._id || r.technicianId,
+      assignedTo: r.technicianId && typeof r.technicianId === 'object' ? {
+        id: r.technicianId._id || r.technicianId.id,
+        name: r.technicianId.name,
+        email: r.technicianId.email,
+        role: r.technicianId.role,
+        createdAt: r.technicianId.createdAt,
+      } : undefined,
+      requestedById: r.createdBy?._id || r.createdBy,
+      scheduledDate: r.scheduledDate,
+      completedDate: r.completedDate,
+      duration: r.durationHours ? r.durationHours * 60 : undefined,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    };
   },
 
   getCalendarEvents: async (): Promise<CalendarEvent[]> => {
@@ -370,6 +485,44 @@ export const requestsApi = {
 
   getByEquipment: async (equipmentId: string): Promise<MaintenanceRequest[]> => {
     const response = await api.get(`/requests/by-equipment/${equipmentId}`);
+    const items = response.data.data || [];
+    return items.map((r: any) => ({
+      id: r._id || r.id,
+      subject: r.subject,
+      description: r.description,
+      type: r.type,
+      status: r.status === 'in-progress' ? 'in_progress' : r.status,
+      priority: r.priority || 'medium',
+      equipmentId: r.equipmentId?._id || r.equipmentId,
+      equipment: r.equipmentId && typeof r.equipmentId === 'object' ? {
+        id: r.equipmentId._id || r.equipmentId.id,
+        name: r.equipmentId.name,
+        location: r.equipmentId.location,
+        status: r.equipmentId.isScrapped ? 'scrapped' : 'operational',
+      } : undefined,
+      teamId: r.maintenanceTeamId?._id || r.maintenanceTeamId,
+      assignedToId: r.technicianId?._id || r.technicianId,
+      assignedTo: r.technicianId && typeof r.technicianId === 'object' ? {
+        id: r.technicianId._id || r.technicianId.id,
+        name: r.technicianId.name,
+        email: r.technicianId.email,
+        role: r.technicianId.role,
+        createdAt: r.technicianId.createdAt,
+      } : undefined,
+      requestedById: r.createdBy?._id || r.createdBy,
+      scheduledDate: r.scheduledDate,
+      completedDate: r.completedDate,
+      duration: r.durationHours ? r.durationHours * 60 : undefined,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  },
+};
+
+// Dashboard API
+export const dashboardApi = {
+  getStats: async (): Promise<any> => {
+    const response = await api.get('/dashboard/stats');
     return response.data.data;
   },
 };
